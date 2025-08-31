@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест на функторный тип личности</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --secondary: #7c3aed;
+            --accent: #06b6d4;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            
+            --tau: #3b82f6;
+            --sigma: #8b5cf6;
+            --delta: #ec4899;
+            --rho: #f97316;
+            --iota: #ef4444;
+            --lambda: #10b981;
+            --kappa: #06b6d4;
+            --mu: #6366f1;
+            --phi: #84cc16;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--success));
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .intro-screen {
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .intro-screen h2 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .intro-screen p {
+            color: #64748b;
+            margin-bottom: 30px;
+            line-height: 1.7;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+
+        .question-screen {
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+
+        .question-number {
+            color: var(--secondary);
+            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .question-text {
+            color: var(--dark);
+            font-size: 1.3em;
+            margin-bottom: 30px;
+            font-weight: 500;
+        }
+
+        .options-container {
+            margin-bottom: 30px;
+        }
+
+        .option-group {
+            background: var(--light);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: move;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .option-group.dragging {
+            opacity: 0.4;
+            transform: scale(0.95);
+        }
+
+        .option-group.drag-over {
+            background: #e0e7ff;
+            border-color: var(--primary);
+        }
+
+        .rank-indicator {
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 1.2em;
+        }
+
+        .option-text {
+            margin-left: 20px;
+            color: var(--dark);
+            font-size: 1.05em;
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .nav-button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .prev-button {
+            background: #e2e8f0;
+            color: var(--dark);
+        }
+
+        .prev-button:hover:not(:disabled) {
+            background: #cbd5e1;
+        }
+
+        .next-button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .next-button:hover:not(:disabled) {
+            transform: translateX(2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-screen {
+            display: none;
+            animation: fadeIn 0.8s ease;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .results-header h2 {
+            color: var(--dark);
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .dominant-type {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+
+        .chart-container {
+            background: var(--light);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .bar-chart {
+            display: grid;
+            gap: 15px;
+        }
+
+        .bar-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 60px;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bar-label {
+            font-weight: 600;
+            color: var(--dark);
+            text-align: right;
+            font-size: 0.95em;
+        }
+
+        .bar-container {
+            background: #e2e8f0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 1s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .bar-value {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 1.1em;
+        }
+
+        .type-descriptions {
+            margin-top: 40px;
+        }
+
+        .type-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .type-tab {
+            padding: 8px 20px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .type-tab:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .type-tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-color: transparent;
+        }
+
+        .type-content {
+            display: none;
+            background: var(--light);
+            border-radius: 16px;
+            padding: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .type-content.active {
+            display: block;
+        }
+
+        .type-content h3 {
+            color: var(--dark);
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .type-content p {
+            color: #64748b;
+            margin-bottom: 15px;
+            line-height: 1.7;
+        }
+
+        .type-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+        }
+
+        .meta-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .meta-label {
+            font-size: 0.85em;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .meta-value {
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .restart-button {
+            display: block;
+            margin: 40px auto 0;
+            background: linear-gradient(135deg, var(--accent), var(--success));
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .restart-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .tooltip {
+            position: absolute;
+            background: var(--dark);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 640px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            .question-text {
+                font-size: 1.1em;
+            }
+            
+            .type-tabs {
+                gap: 5px;
+            }
+            
+            .type-tab {
+                padding: 6px 15px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Функторный тип личности</h1>
+            <p>Откройте свой когнитивный генератор</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Intro Screen -->
+            <div class="intro-screen" id="introScreen">
+                <h2>Добро пожаловать в мир функторной типологии</h2>
+                <p>
+                    Этот тест определит ваш доминирующий когнитивный генератор — базовую операцию, 
+                    через которую вы преобразуете информацию и опыт. Вам предстоит ответить на 21 вопрос, 
+                    ранжируя варианты действий от наиболее к наименее естественным для вас.
+                </p>
+                <p>
+                    <strong>Важно:</strong> Отвечайте искренне, основываясь на том, как вы действуете обычно, 
+                    а не на том, как хотели бы действовать. Правильных или неправильных ответов не существует.
+                </p>
+                <button class="start-button" onclick="startTest()">Начать тест</button>
+            </div>
+
+            <!-- Question Screen -->
+            <div class="question-screen" id="questionScreen">
+                <div class="question-number" id="questionNumber">Вопрос 1 из 21</div>
+                <div class="question-text" id="questionText"></div>
+                <div class="options-container" id="optionsContainer"></div>
+                <div class="buttons-container">
+                    <button class="nav-button prev-button" id="prevButton" onclick="previousQuestion()" disabled>Назад</button>
+                    <button class="nav-button next-button" id="nextButton" onclick="nextQuestion()">Далее</button>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div class="results-screen" id="resultsScreen">
+                <div class="results-header">
+                    <h2>Ваш функторный профиль</h2>
+                    <div class="dominant-type" id="dominantType"></div>
+                </div>
+
+                <div class="chart-container">
+                    <h3 style="margin-bottom: 20px; color: var(--dark);">Распределение генераторов</h3>
+                    <div class="bar-chart" id="barChart"></div>
+                </div>
+
+                <div class="type-descriptions">
+                    <h3 style="text-align: center; margin-bottom: 20px; color: var(--dark);">Описание генераторов</h3>
+                    <div class="type-tabs" id="typeTabs"></div>
+                    <div id="typeContents"></div>
+                </div>
+
+                <button class="restart-button" onclick="restartTest()">Пройти тест заново</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Test data structure
+        const questions = [
+            {
+                text: "Вы получили массив разрозненных данных для анализа. Что вы делаете в первую очередь?",
+                options: [
+                    { text: "Прослеживаю, как данные изменяются во времени", generator: "tau" },
+                    { text: "Ищу связи и корреляции между переменными", generator: "sigma" },
+                    { text: "Выделяю общий паттерн или принцип", generator: "lambda" }
+                ]
+            },
+            {
+                text: "Проект застрял и не движется. Ваш первый импульс:",
+                options: [
+                    { text: "Инициировать переход к новой фазе", generator: "tau" },
+                    { text: "Разделить проблему на независимые части", generator: "delta" },
+                    { text: "Применить тот же подход, но интенсивнее", generator: "mu" }
+                ]
+            },
+            {
+                text: "Вы объясняете сложную концепцию. Что делаете?",
+                options: [
+                    { text: "Привожу множество конкретных примеров", generator: "kappa" },
+                    { text: "Показываю противоположный случай для контраста", generator: "iota" },
+                    { text: "Меняю контекст, чтобы увидели по-новому", generator: "phi" }
+                ]
+            },
+            {
+                text: "В команде возник конфликт. Ваша стратегия:",
+                options: [
+                    { text: "Найти общую основу для объединения", generator: "sigma" },
+                    { text: "Четко разграничить зоны ответственности", generator: "delta" },
+                    { text: "Переосмыслить конфликт как возможность", generator: "phi" }
+                ]
+            },
+            {
+                text: "Вы нашли успешное решение. Что дальше?",
+                options: [
+                    { text: "Тиражирую на другие области", generator: "rho" },
+                    { text: "Ищу, как сделать противоположное", generator: "iota" },
+                    { text: "Поднимаюсь на уровень выше, чтобы понять принцип", generator: "lambda" }
+                ]
+            },
+            {
+                text: "Изучаете новую область знаний. Как подходите?",
+                options: [
+                    { text: "Двигаюсь от простого к сложному пошагово", generator: "tau" },
+                    { text: "Сразу погружаюсь в конкретные кейсы", generator: "kappa" },
+                    { text: "Рекурсивно углубляюсь, применяя знание к себе", generator: "mu" }
+                ]
+            },
+            {
+                text: "Нужно оптимизировать процесс. С чего начинаете?",
+                options: [
+                    { text: "Убираю лишние связи и зависимости", generator: "delta" },
+                    { text: "Масштабирую то, что уже работает", generator: "rho" },
+                    { text: "Полностью переворачиваю логику процесса", generator: "iota" }
+                ]
+            },
+            {
+                text: "Вы столкнулись с парадоксом. Реакция:",
+                options: [
+                    { text: "Ищу переход между противоположностями", generator: "tau" },
+                    { text: "Применяю парадокс к самому себе", generator: "mu" },
+                    { text: "Меняю рамку восприятия ситуации", generator: "phi" }
+                ]
+            },
+            {
+                text: "Планируете стратегию на год. Фокус на:",
+                options: [
+                    { text: "Ключевые переходы между этапами", generator: "tau" },
+                    { text: "Систему взаимосвязанных целей", generator: "sigma" },
+                    { text: "Абстрактное видение и принципы", generator: "lambda" }
+                ]
+            },
+            {
+                text: "В творческом тупике. Что помогает?",
+                options: [
+                    { text: "Разделить задачу на независимые элементы", generator: "delta" },
+                    { text: "Сделать всё наоборот", generator: "iota" },
+                    { text: "Посмотреть из другого контекста", generator: "phi" }
+                ]
+            },
+            {
+                text: "Анализируете провал. На чём фокус?",
+                options: [
+                    { text: "Конкретные действия и детали", generator: "kappa" },
+                    { text: "Повторяющиеся паттерны ошибок", generator: "rho" },
+                    { text: "Рекурсивные петли, усиливающие проблему", generator: "mu" }
+                ]
+            },
+            {
+                text: "Строите гипотезу. Как проверяете?",
+                options: [
+                    { text: "Прослеживаю изменения во времени", generator: "tau" },
+                    { text: "Проверяю на множестве примеров", generator: "kappa" },
+                    { text: "Ищу, где принцип не работает", generator: "iota" }
+                ]
+            },
+            {
+                text: "Нужно убедить скептика. Стратегия:",
+                options: [
+                    { text: "Показываю связь с тем, что уже принимает", generator: "sigma" },
+                    { text: "Обобщаю до универсального принципа", generator: "lambda" },
+                    { text: "Рефреймлю в выгодный контекст", generator: "phi" }
+                ]
+            },
+            {
+                text: "Оптимизируете личную эффективность:",
+                options: [
+                    { text: "Четко разделяю сферы жизни", generator: "delta" },
+                    { text: "Копирую привычки успешных людей", generator: "rho" },
+                    { text: "Применяю мета-подход к самому подходу", generator: "mu" }
+                ]
+            },
+            {
+                text: "Исследуете сложную систему. Метод:",
+                options: [
+                    { text: "Отслеживаю переходы состояний", generator: "tau" },
+                    { text: "Выявляю все связи между элементами", generator: "sigma" },
+                    { text: "Инвертирую систему, чтобы понять", generator: "iota" }
+                ]
+            },
+            {
+                text: "Решаете нестандартную задачу:",
+                options: [
+                    { text: "Разбиваю на знакомые подзадачи", generator: "delta" },
+                    { text: "Поднимаюсь до уровня метазадачи", generator: "lambda" },
+                    { text: "Переформулирую в другой домен", generator: "phi" }
+                ]
+            },
+            {
+                text: "Создаёте что-то новое. Процесс:",
+                options: [
+                    { text: "Комбинирую существующие элементы", generator: "sigma" },
+                    { text: "Размножаю удачную находку", generator: "rho" },
+                    { text: "Конкретизирую абстрактную идею", generator: "kappa" }
+                ]
+            },
+            {
+                text: "Передаёте знание другому. Как?",
+                options: [
+                    { text: "Веду через последовательность шагов", generator: "tau" },
+                    { text: "Даю принцип и позволяю вывести детали", generator: "lambda" },
+                    { text: "Использую рекурсивные упражнения", generator: "mu" }
+                ]
+            },
+            {
+                text: "Меняете привычку. Подход:",
+                options: [
+                    { text: "Резкий переход к новому поведению", generator: "tau" },
+                    { text: "Делаю противоположное привычному", generator: "iota" },
+                    { text: "Меняю контекст, где привычка проявляется", generator: "phi" }
+                ]
+            },
+            {
+                text: "Работаете с эмоциями. Метод:",
+                options: [
+                    { text: "Разделяю чувство и его триггер", generator: "delta" },
+                    { text: "Конкретизирую в телесных ощущениях", generator: "kappa" },
+                    { text: "Рефлексирую о чувстве к чувству", generator: "mu" }
+                ]
+            },
+            {
+                text: "Принимаете важное решение:",
+                options: [
+                    { text: "Связываю все факторы в единую картину", generator: "sigma" },
+                    { text: "Масштабирую последствия во времени", generator: "rho" },
+                    { text: "Абстрагируюсь до уровня ценностей", generator: "lambda" }
+                ]
+            }
+        ];
+
+        // Generator descriptions
+        const generatorInfo = {
+            tau: {
+                name: "Транзитор",
+                symbol: "τ",
+                color: "#3b82f6",
+                shortDesc: "Мастер переходов и трансформаций",
+                fullDesc: "Вы естественно инициируете и проводите изменения. Ваша сила — в способности видеть и создавать переходы между состояниями.",
+                strengths: "Адаптивность, инициация изменений, процессное мышление",
+                challenges: "Завершение начатого, поддержание стабильности",
+                advice: "Развивайте способность к завершению через интеграцию с σ (связывание)"
+            },
+            sigma: {
+                name: "Коннектор",
+                symbol: "σ",
+                color: "#8b5cf6",
+                shortDesc: "Создатель связей и синергий",
+                fullDesc: "Вы видите и создаёте связи там, где другие видят разрозненность. Ваш талант — объединять людей, идеи и ресурсы.",
+                strengths: "Построение отношений, системное видение, создание синергии",
+                challenges: "Автономность, установление границ",
+                advice: "Балансируйте через δ (разделение) для здоровых границ"
+            },
+            delta: {
+                name: "Сепаратор",
+                symbol: "δ",
+                color: "#ec4899",
+                shortDesc: "Аналитик и мастер декомпозиции",
+                fullDesc: "Ваша суперсила — способность разделять сложное на простое, выделять независимые компоненты и устанавливать четкие границы.",
+                strengths: "Анализ, структурирование, установление границ",
+                challenges: "Синтез, видение целого",
+                advice: "Интегрируйте σ (связывание) для целостного видения"
+            },
+            rho: {
+                name: "Репликатор",
+                symbol: "ρ",
+                color: "#f97316",
+                shortDesc: "Мастер масштабирования и тиражирования",
+                fullDesc: "Вы умеете находить работающие паттерны и масштабировать их. Ваш дар — в способности размножать успех.",
+                strengths: "Масштабирование, стандартизация, обучение",
+                challenges: "Инновации, гибкость",
+                advice: "Добавьте ι (инверсию) для прорывных решений"
+            },
+            iota: {
+                name: "Инвертор",
+                symbol: "ι",
+                color: "#ef4444",
+                shortDesc: "Революционер и разрушитель парадигм",
+                fullDesc: "Вы видите мир через призму противоположностей. Ваша сила — в способности переворачивать привычное и находить неочевидные решения.",
+                strengths: "Инновации, критическое мышление, прорывы",
+                challenges: "Принятие очевидного, сотрудничество",
+                advice: "Балансируйте через τ (переходы) для плавных изменений"
+            },
+            lambda: {
+                name: "Абстрактор",
+                symbol: "λ",
+                color: "#10b981",
+                shortDesc: "Философ и создатель концепций",
+                fullDesc: "Вы естественно поднимаетесь над деталями к общим принципам. Ваш талант — видеть паттерны и создавать теории.",
+                strengths: "Стратегическое мышление, создание теорий, обучение",
+                challenges: "Практическая реализация, внимание к деталям",
+                advice: "Заземляйтесь через κ (конкретизацию)"
+            },
+            kappa: {
+                name: "Конкретизатор",
+                symbol: "κ",
+                color: "#06b6d4",
+                shortDesc: "Практик и мастер воплощения",
+                fullDesc: "Вы превращаете идеи в реальность. Ваша сила — во внимании к деталям и способности создавать работающие решения.",
+                strengths: "Реализация, внимание к деталям, практичность",
+                challenges: "Стратегическое видение, абстрактное мышление",
+                advice: "Расширяйте видение через λ (абстракцию)"
+            },
+            mu: {
+                name: "Рекурсор",
+                symbol: "μ",
+                color: "#6366f1",
+                shortDesc: "Мастер саморефлексии и углубления",
+                fullDesc: "Вы применяете процессы к самим себе, создавая глубину понимания. Ваш дар — в способности к мета-мышлению.",
+                strengths: "Саморефлексия, глубина понимания, элегантность решений",
+                challenges: "Зацикливание, паралич анализа",
+                advice: "Прерывайте циклы через τ (переходы)"
+            },
+            phi: {
+                name: "Рефреймер",
+                symbol: "φ",
+                color: "#84cc16",
+                shortDesc: "Мастер контекстов и переосмысления",
+                fullDesc: "Вы легко меняете рамки восприятия. Ваша суперсила — способность трансформировать смыслы через изменение контекста.",
+                strengths: "Гибкость мышления, разрешение конфликтов, креативность",
+                challenges: "Принятие позиции, прямота",
+                advice: "Укрепляйте через δ (четкие границы)"
+            }
+        };
+
+        // Test state
+        let currentQuestion = 0;
+        let answers = [];
+        let draggedElement = null;
+
+        // Initialize test
+        function initTest() {
+            // Shuffle questions to prevent memorization
+            for (let i = questions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [questions[i], questions[j]] = [questions[j], questions[i]];
+            }
+            
+            // Shuffle options within each question
+            questions.forEach(q => {
+                for (let i = q.options.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [q.options[i], q.options[j]] = [q.options[j], q.options[i]];
+                }
+            });
+        }
+
+        function startTest() {
+            initTest();
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('questionScreen').style.display = 'block';
+            showQuestion(0);
+        }
+
+        function showQuestion(index) {
+            const question = questions[index];
+            document.getElementById('questionNumber').textContent = `Вопрос ${index + 1} из ${questions.length}`;
+            document.getElementById('questionText').textContent = question.text;
+            
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = '';
+            
+            // Create draggable options
+            question.options.forEach((option, i) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option-group';
+                optionDiv.draggable = true;
+                optionDiv.dataset.index = i;
+                optionDiv.dataset.generator = option.generator;
+                
+                optionDiv.innerHTML = `
+                    <div class="rank-indicator">${i + 1}</div>
+                    <div class="option-text">${option.text}</div>
+                `;
+                
+                // Add drag event listeners
+                optionDiv.addEventListener('dragstart', handleDragStart);
+                optionDiv.addEventListener('dragover', handleDragOver);
+                optionDiv.addEventListener('drop', handleDrop);
+                optionDiv.addEventListener('dragend', handleDragEnd);
+                optionDiv.addEventListener('dragenter', handleDragEnter);
+                optionDiv.addEventListener('dragleave', handleDragLeave);
+                
+                // Touch events for mobile
+                optionDiv.addEventListener('touchstart', handleTouchStart, {passive: false});
+                optionDiv.addEventListener('touchmove', handleTouchMove, {passive: false});
+                optionDiv.addEventListener('touchend', handleTouchEnd);
+                
+                container.appendChild(optionDiv);
+            });
+            
+            updateProgress();
+            updateNavButtons();
+        }
+
+        // Drag and drop handlers
+        function handleDragStart(e) {
+            draggedElement = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            this.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (draggedElement !== this) {
+                const container = document.getElementById('optionsContainer');
+                const allOptions = Array.from(container.children);
+                const draggedIndex = allOptions.indexOf(draggedElement);
+                const targetIndex = allOptions.indexOf(this);
+                
+                if (draggedIndex < targetIndex) {
+                    container.insertBefore(draggedElement, this.nextSibling);
+                } else {
+                    container.insertBefore(draggedElement, this);
+                }
+                
+                updateRankIndicators();
+            }
+            
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            const options = document.querySelectorAll('.option-group');
+            options.forEach(option => {
+                option.classList.remove('dragging', 'drag-over');
+            });
+        }
+
+        // Touch handlers for mobile
+        let touchItem = null;
+        let touchOffset = {x: 0, y: 0};
+
+        function handleTouchStart(e) {
+            touchItem = this;
+            const touch = e.touches[0];
+            const rect = this.getBoundingClientRect();
+            touchOffset.x = touch.clientX - rect.left;
+            touchOffset.y = touch.clientY - rect.top;
+            this.style.opacity = '0.5';
+        }
+
+        function handleTouchMove(e) {
+            if (!touchItem) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            
+            if (elementBelow && elementBelow.classList.contains('option-group') && elementBelow !== touchItem) {
+                const container = document.getElementById('optionsContainer');
+                const allOptions = Array.from(container.children);
+                const touchIndex = allOptions.indexOf(touchItem);
+                const targetIndex = allOptions.indexOf(elementBelow);
+                
+                if (touchIndex < targetIndex) {
+                    container.insertBefore(touchItem, elementBelow.nextSibling);
+                } else {
+                    container.insertBefore(touchItem, elementBelow);
+                }
+                
+                updateRankIndicators();
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (touchItem) {
+                touchItem.style.opacity = '1';
+                touchItem = null;
+            }
+        }
+
+        function updateRankIndicators() {
+            const options = document.querySelectorAll('.option-group');
+            options.forEach((option, index) => {
+                option.querySelector('.rank-indicator').textContent = index + 1;
+            });
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.getElementById('progressBar').style.width = `${progress}%`;
+        }
+
+        function updateNavButtons() {
+            document.getElementById('prevButton').disabled = currentQuestion === 0;
+            document.getElementById('nextButton').textContent = 
+                currentQuestion === questions.length - 1 ? 'Завершить' : 'Далее';
+        }
+
+        function saveAnswer() {
+            const options = document.querySelectorAll('.option-group');
+            const ranking = Array.from(options).map((option, index) => ({
+                generator: option.dataset.generator,
+                rank: index + 1,
+                points: 3 - index // 1st place = 3 points, 2nd = 2, 3rd = 1
+            }));
+            
+            answers[currentQuestion] = ranking;
+        }
+
+        function nextQuestion() {
+            saveAnswer();
+            
+            if (currentQuestion < questions.length - 1) {
+                currentQuestion++;
+                showQuestion(currentQuestion);
+            } else {
+                showResults();
+            }
+        }
+
+        function previousQuestion() {
+            saveAnswer();
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                showQuestion(currentQuestion);
+            }
+        }
+
+        function calculateResults() {
+            const scores = {};
+            
+            // Initialize scores
+            Object.keys(generatorInfo).forEach(gen => {
+                scores[gen] = 0;
+            });
+            
+            // Calculate total points for each generator
+            answers.forEach(answer => {
+                answer.forEach(item => {
+                    scores[item.generator] += item.points;
+                });
+            });
+            
+            // Convert to percentages
+            const totalPoints = 126; // 21 questions * 6 points per question
+            const percentages = {};
+            Object.keys(scores).forEach(gen => {
+                percentages[gen] = Math.round((scores[gen] / totalPoints) * 100);
+            });
+            
+            return percentages;
+        }
+
+        function showResults() {
+            document.getElementById('questionScreen').style.display = 'none';
+            document.getElementById('resultsScreen').style.display = 'block';
+            
+            const results = calculateResults();
+            
+            // Find dominant type
+            let maxScore = 0;
+            let dominantType = '';
+            Object.keys(results).forEach(gen => {
+                if (results[gen] > maxScore) {
+                    maxScore = results[gen];
+                    dominantType = gen;
+                }
+            });
+            
+            // Display dominant type
+            const dominantInfo = generatorInfo[dominantType];
+            document.getElementById('dominantType').textContent = 
+                `${dominantInfo.symbol} ${dominantInfo.name}`;
+            
+            // Create bar chart
+            const chartContainer = document.getElementById('barChart');
+            chartContainer.innerHTML = '';
+            
+            // Sort by score
+            const sortedGenerators = Object.keys(results).sort((a, b) => results[b] - results[a]);
+            
+            sortedGenerators.forEach(gen => {
+                const info = generatorInfo[gen];
+                const barItem = document.createElement('div');
+                barItem.className = 'bar-item';
+                
+                barItem.innerHTML = `
+                    <div class="bar-label">${info.symbol} ${info.name}</div>
+                    <div class="bar-container">
+                        <div class="bar-fill" style="background: linear-gradient(135deg, ${info.color}, ${info.color}dd); width: 0%"></div>
+                    </div>
+                    <div class="bar-value">${results[gen]}%</div>
+                `;
+                
+                chartContainer.appendChild(barItem);
+                
+                // Animate bar fill
+                setTimeout(() => {
+                    barItem.querySelector('.bar-fill').style.width = `${results[gen]}%`;
+                }, 100);
+            });
+            
+            // Create type tabs and content
+            createTypeTabs(dominantType);
+            
+            // Update progress to 100%
+            document.getElementById('progressBar').style.width = '100%';
+        }
+
+        function createTypeTabs(dominantType) {
+            const tabsContainer = document.getElementById('typeTabs');
+            const contentsContainer = document.getElementById('typeContents');
+            
+            tabsContainer.innerHTML = '';
+            contentsContainer.innerHTML = '';
+            
+            Object.keys(generatorInfo).forEach(gen => {
+                const info = generatorInfo[gen];
+                
+                // Create tab
+                const tab = document.createElement('button');
+                tab.className = 'type-tab';
+                tab.textContent = `${info.symbol} ${info.name}`;
+                tab.onclick = () => selectTypeTab(gen);
+                
+                if (gen === dominantType) {
+                    tab.classList.add('active');
+                }
+                
+                tabsContainer.appendChild(tab);
+                
+                // Create content
+                const content = document.createElement('div');
+                content.className = 'type-content';
+                content.id = `type-${gen}`;
+                
+                if (gen === dominantType) {
+                    content.classList.add('active');
+                }
+                
+                content.innerHTML = `
+                    <h3>${info.symbol} ${info.name} - ${info.shortDesc}</h3>
+                    <p><strong>Описание:</strong> ${info.fullDesc}</p>
+                    <div class="type-meta">
+                        <div class="meta-item">
+                            <div class="meta-label">Сильные стороны</div>
+                            <div class="meta-value">${info.strengths}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Зоны роста</div>
+                            <div class="meta-value">${info.challenges}</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="meta-label">Рекомендация</div>
+                            <div class="meta-value">${info.advice}</div>
+                        </div>
+                    </div>
+                `;
+                
+                contentsContainer.appendChild(content);
+            });
+        }
+
+        function selectTypeTab(generator) {
+            // Update tabs
+            document.querySelectorAll('.type-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.type-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`type-${generator}`).classList.add('active');
+        }
+
+        function restartTest() {
+            currentQuestion = 0;
+            answers = [];
+            document.getElementById('resultsScreen').style.display = 'none';
+            document.getElementById('introScreen').style.display = 'block';
+            document.getElementById('progressBar').style.width = '0%';
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            // Add smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
