@@ -1,0 +1,1639 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ФРАКТАЛ-27 - Функторная модель когнитивных трансформаций</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            overflow: hidden;
+            color: #fff;
+            position: relative;
+        }
+
+        /* Animated background */
+        .bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: linear-gradient(125deg, #000428 0%, #004e92 100%);
+        }
+
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Credits banner */
+        .credits-banner {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 101;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            padding: 15px 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            animation: slideInDown 0.8s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .model-title {
+            font-size: 20px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+            letter-spacing: 2px;
+        }
+
+        .authors {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-bottom: 4px;
+        }
+
+        .location-date {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        /* Main container */
+        .container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            height: 100vh;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Left panel - Functor Explorer */
+        .functor-panel {
+            width: 320px;
+            background: rgba(15, 23, 42, 0.95);
+            border-right: 1px solid rgba(59, 130, 246, 0.3);
+            overflow-y: auto;
+            padding: 20px;
+            animation: slideInLeft 0.6s ease;
+        }
+
+        @keyframes slideInLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .panel-header {
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .functor-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .functor-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .functor-card:hover::before {
+            left: 100%;
+        }
+
+        .functor-card:hover {
+            transform: translateX(10px);
+            border-color: rgba(59, 130, 246, 0.6);
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+
+        .functor-card.active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(168, 85, 247, 0.2));
+            border-color: #3b82f6;
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.5);
+        }
+
+        .functor-number {
+            display: inline-flex;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 12px;
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
+        }
+
+        .functor-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .functor-formula {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            border-left: 2px solid #3b82f6;
+        }
+
+        /* Center - 3D Visualization */
+        .scene-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            perspective: 2000px;
+            padding-top: 80px;
+            padding-bottom: 80px;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes slideInDown {
+            from { transform: translate(-50%, -100%); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .control-btn:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.5);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .cube-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform-style: preserve-3d;
+            cursor: grab;
+        }
+
+        .cube-wrapper:active {
+            cursor: grabbing;
+        }
+
+        .cube {
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-style: preserve-3d;
+            transform: translate(-50%, -50%) rotateX(-20deg) rotateY(30deg);
+            transition: transform 0.1s ease;
+        }
+
+        .node {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .node::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            filter: blur(20px);
+            opacity: 0.7;
+            z-index: -1;
+        }
+
+        .generator {
+            background: linear-gradient(135deg, #667eea, #4c51bf);
+            color: white;
+        }
+
+        .operator {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .modality {
+            background: linear-gradient(135deg, #f59e0b, #dc2626);
+            color: white;
+        }
+
+        .node.highlighted {
+            transform: scale(1.3);
+            z-index: 1000;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                box-shadow: 0 0 40px rgba(255, 215, 0, 0.8),
+                           0 0 60px rgba(255, 215, 0, 0.6),
+                           0 0 80px rgba(255, 215, 0, 0.4);
+            }
+            50% { 
+                box-shadow: 0 0 60px rgba(255, 215, 0, 1),
+                           0 0 80px rgba(255, 215, 0, 0.8),
+                           0 0 100px rgba(255, 215, 0, 0.6);
+            }
+        }
+
+        .node-label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.95);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .node:hover .node-label,
+        .node.highlighted .node-label,
+        .labels-visible .node-label {
+            opacity: 1;
+        }
+
+        /* Axes */
+        .axes-container {
+            position: absolute;
+            width: 0;
+            height: 0;
+            transform-style: preserve-3d;
+            pointer-events: none;
+        }
+
+        .axis {
+            position: absolute;
+            transform-origin: center;
+            pointer-events: none;
+        }
+
+        .axis-line {
+            position: absolute;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.6), transparent);
+            transform-origin: left center;
+        }
+
+        /* X Axis */
+        .axis-x {
+            width: 800px;
+            height: 2px;
+            transform: translate3d(-400px, 0, -300px);
+        }
+
+        .axis-x .axis-line {
+            width: 800px;
+            height: 2px;
+            background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.8), rgba(59, 130, 246, 0.8), transparent);
+        }
+
+        /* Y Axis */
+        .axis-y {
+            width: 2px;
+            height: 800px;
+            transform: translate3d(-300px, -400px, 0);
+        }
+
+        .axis-y .axis-line {
+            width: 2px;
+            height: 800px;
+            background: linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.8), rgba(16, 185, 129, 0.8), transparent);
+        }
+
+        /* Z Axis */
+        .axis-z {
+            width: 2px;
+            height: 800px;
+            transform: translate3d(-300px, 0, -130px) rotateX(90deg);
+        }
+
+        .axis-z .axis-line {
+            width: 2px;
+            height: 800px;
+            background: linear-gradient(to bottom, transparent, rgba(245, 158, 11, 0.8), rgba(245, 158, 11, 0.8), transparent);
+        }
+
+        .axis-label {
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+            white-space: nowrap;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+            cursor: default;
+            transition: all 0.3s ease;
+        }
+        
+        .axis-label-subtitle {
+            font-size: 11px;
+            font-weight: normal;
+            opacity: 0.9;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+        }
+
+        .axis-label.x-label {
+            right: -150px;
+            top: -20px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(139, 92, 246, 0.8));
+        }
+
+        .axis-label.y-label {
+            top: -60px;
+            left: -15px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.8), rgba(5, 150, 105, 0.8));
+        }
+
+        .axis-label.z-label {
+            bottom: -60px;
+            left: -30px;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.8), rgba(220, 38, 38, 0.8));
+        }
+
+        .axis-tick {
+            position: absolute;
+            color: rgba(255,255,255,0.9);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+            pointer-events: auto;
+            white-space: nowrap;
+            cursor: help;
+            transition: all 0.3s ease;
+        }
+        
+        .axis-tick:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+            z-index: 100;
+        }
+        
+        .axis-tick-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 5px;
+            padding: 6px 10px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(139, 92, 246, 0.5);
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: normal;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            min-width: 150px;
+            text-align: center;
+            z-index: 1000;
+        }
+        
+        .axis-tick:hover .axis-tick-tooltip {
+            opacity: 1;
+        }
+
+        /* X Axis ticks */
+        .tick-x {
+            top: 10px;
+            transform: translateX(-50%);
+        }
+
+        .tick-x.structural {
+            left: 31%;
+            background: rgba(59, 130, 246, 0.4);
+        }
+
+        .tick-x.dynamic {
+            left: 53%;
+            background: rgba(59, 130, 246, 0.4);
+        }
+
+        .tick-x.meta {
+            left: 76%;
+            background: rgba(59, 130, 246, 0.4);
+        }
+
+        /* Y Axis ticks */
+        .tick-y {
+            left: 10px;
+            transform: translateY(-50%);
+        }
+
+        .tick-y.elementary {
+            top: 32%;
+            background: rgba(16, 185, 129, 0.4);
+        }
+
+        .tick-y.iterative {
+            top: 53%;
+            background: rgba(16, 185, 129, 0.4);
+        }
+
+        .tick-y.emergent {
+            top: 77%;
+            background: rgba(16, 185, 129, 0.4);
+        }
+
+        /* Z Axis ticks */
+        .tick-z {
+            left: 10px;
+        }
+
+        .tick-z.basic {
+            top: 87%;
+            background: rgba(245, 158, 11, 0.6);
+        }
+
+        .tick-z.process {
+            top: 65%;
+            background: rgba(245, 158, 11, 0.6);
+        }
+
+        .tick-z.transcendent {
+            top: 43%;
+            background: rgba(245, 158, 11, 0.6);
+        }
+
+        /* Right panels */
+        .right-panels {
+            display: flex;
+            width: 650px;
+        }
+
+        /* Details panel */
+        .details-panel {
+            width: 400px;
+            background: rgba(15, 23, 42, 0.95);
+            border-left: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 20px;
+            overflow-y: auto;
+            animation: slideInRight 0.6s ease;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Structure panel */
+        .structure-panel {
+            width: 250px;
+            background: rgba(15, 23, 42, 0.95);
+            padding: 20px;
+            overflow-y: auto;
+            border-left: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .structure-panel h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .structure-section {
+            margin-bottom: 20px;
+        }
+
+        .structure-section h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+        }
+
+        .structure-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .structure-items {
+            margin-left: 28px;
+        }
+
+        .structure-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+            color: #cbd5e1;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            margin-bottom: 4px;
+        }
+
+        .structure-item.highlighted {
+            background: linear-gradient(to right, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+            font-weight: bold;
+            transform: translateX(5px);
+            color: #fbbf24;
+        }
+
+        .structure-symbol {
+            font-weight: bold;
+            font-size: 16px;
+            width: 25px;
+        }
+
+        .detail-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .detail-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .detail-section {
+            margin-bottom: 15px;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .detail-content {
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .formula-display {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Monaco', monospace;
+            color: #3b82f6;
+            border-left: 3px solid #3b82f6;
+            margin: 10px 0;
+        }
+
+        .example-box {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #8b5cf6;
+            font-style: italic;
+            color: #cbd5e1;
+        }
+
+        /* Matrix rain effect */
+        .matrix-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .matrix-column {
+            position: absolute;
+            top: -100%;
+            font-family: monospace;
+            font-size: 20px;
+            color: #0f0;
+            animation: matrixFall linear infinite;
+        }
+
+        @keyframes matrixFall {
+            to { top: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-canvas"></div>
+    <div class="stars" id="stars"></div>
+    <div class="matrix-rain" id="matrixRain"></div>
+    
+    <!-- Credits Banner -->
+    <div class="credits-banner">
+        <div class="model-title">ФРАКТАЛ-27</div>
+        <div class="authors">Функторная модель когнитивных трансформаций</div>
+        <div class="authors">Авторы: Селютин Илья Геральдович, Ковалев Николай Иванович</div>
+        <div class="location-date">Москва, 30.08.25</div>
+    </div>
+    
+    <div class="container">
+        <!-- Left Panel - Functors -->
+        <div class="functor-panel">
+            <div class="panel-header">
+                🧊 Функторы сознания
+            </div>
+            <div id="functorsList"></div>
+        </div>
+
+        <!-- Center - 3D Cube -->
+        <div class="scene-container">
+            <div class="controls">
+                <button class="control-btn" onclick="resetView()">🔄 Сброс</button>
+                <button class="control-btn" id="rotateBtn" onclick="toggleRotation()">▶️ Вращение</button>
+                <button class="control-btn" id="labelsBtn" onclick="toggleLabels()">🏷️ Метки</button>
+                <button class="control-btn" onclick="explodeView()">💥 Развернуть</button>
+                <button class="control-btn" onclick="focusMode()">🎯 Фокус</button>
+            </div>
+            
+            <div class="cube-wrapper" id="cubeWrapper">
+                <div class="cube" id="cube">
+                    <!-- Axes container -->
+                    <div class="axes-container">
+                        <!-- X Axis -->
+                        <div class="axis axis-x">
+                            <div class="axis-line"></div>
+                            <div class="axis-label x-label">
+                                X: ЧТО
+                                <div class="axis-label-subtitle">структурная природа</div>
+                            </div>
+                            <div class="axis-tick tick-x structural">
+                                Структурные
+                                <div class="axis-tick-tooltip">статические формы и топология</div>
+                            </div>
+                            <div class="axis-tick tick-x dynamic">
+                                Динамические
+                                <div class="axis-tick-tooltip">процессы и движение</div>
+                            </div>
+                            <div class="axis-tick tick-x meta">
+                                Метауровневые
+                                <div class="axis-tick-tooltip">синтез и трансценденция</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Y Axis -->
+                        <div class="axis axis-y">
+                            <div class="axis-line"></div>
+                            <div class="axis-label y-label">
+                                Y: КАК
+                                <div class="axis-label-subtitle">операциональная сложность</div>
+                            </div>
+                            <div class="axis-tick tick-y elementary">
+                                Элементарные
+                                <div class="axis-tick-tooltip">простые, атомарные операции</div>
+                            </div>
+                            <div class="axis-tick tick-y iterative">
+                                Итеративные
+                                <div class="axis-tick-tooltip">циклические, повторяющиеся процессы</div>
+                            </div>
+                            <div class="axis-tick tick-y emergent">
+                                Эмерджентные
+                                <div class="axis-tick-tooltip">возникающие, системные эффекты</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Z Axis -->
+                        <div class="axis axis-z">
+                            <div class="axis-line"></div>
+                            <div class="axis-label z-label">
+                                Z: РЕЖИМ
+                                <div class="axis-label-subtitle">онтологическая глубина</div>
+                            </div>
+                            <div class="axis-tick tick-z transcendent">
+                                Трансцендентные
+                                <div class="axis-tick-tooltip">выходящие за пределы системы</div>
+                            </div>
+                            <div class="axis-tick tick-z process">
+                                Процессные
+                                <div class="axis-tick-tooltip">трансформационные, переходные</div>
+                            </div>
+                            <div class="axis-tick tick-z basic">
+                                Базовые
+                                <div class="axis-tick-tooltip">фундаментальные, первичные</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panels -->
+        <div class="right-panels">
+            <!-- Details Panel -->
+            <div class="details-panel" id="detailsPanel">
+                <div class="detail-card">
+                    <div class="detail-title">Функторные миры открываются ЗДЕСЬ</div>
+                    <div class="detail-content">
+                        Выберите функтор и начните путешествие в «квантовую механику» собственного мышления.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Structure Panel -->
+            <div class="structure-panel">
+                <h2>📊 Структура гиперкуба</h2>
+                
+                <div class="structure-section">
+                    <h3><span class="structure-dot" style="background: linear-gradient(135deg, #667eea, #4c51bf);"></span>Генераторы (9)</h3>
+                    <div class="structure-items">
+                        <div class="structure-item" data-node="0"><span class="structure-symbol">τ</span> Переход</div>
+                        <div class="structure-item" data-node="1"><span class="structure-symbol">σ</span> Связывание</div>
+                        <div class="structure-item" data-node="2"><span class="structure-symbol">δ</span> Разделение</div>
+                        <div class="structure-item" data-node="3"><span class="structure-symbol">ρ</span> Репликация</div>
+                        <div class="structure-item" data-node="4"><span class="structure-symbol">ι</span> Инверсия</div>
+                        <div class="structure-item" data-node="5"><span class="structure-symbol">λ</span> Абстракция</div>
+                        <div class="structure-item" data-node="6"><span class="structure-symbol">κ</span> Конкретизация</div>
+                        <div class="structure-item" data-node="7"><span class="structure-symbol">μ</span> Рекурсия</div>
+                        <div class="structure-item" data-node="8"><span class="structure-symbol">φ</span> Рефрейминг</div>
+                    </div>
+                </div>
+
+                <div class="structure-section">
+                    <h3><span class="structure-dot" style="background: linear-gradient(135deg, #10b981, #059669);"></span>Операторы (9)</h3>
+                    <div class="structure-items">
+                        <div class="structure-item" data-node="9"><span class="structure-symbol">∘</span> Последовательность</div>
+                        <div class="structure-item" data-node="10"><span class="structure-symbol">⊗</span> Параллель</div>
+                        <div class="structure-item" data-node="11"><span class="structure-symbol">⊕</span> Альтернатива</div>
+                        <div class="structure-item" data-node="12"><span class="structure-symbol">★</span> Итерация</div>
+                        <div class="structure-item" data-node="13"><span class="structure-symbol">∫</span> Континуум</div>
+                        <div class="structure-item" data-node="14"><span class="structure-symbol">∂</span> Точечность</div>
+                        <div class="structure-item" data-node="15"><span class="structure-symbol">∘★</span> Цикл</div>
+                        <div class="structure-item" data-node="16"><span class="structure-symbol">⊗∫</span> Поток</div>
+                        <div class="structure-item" data-node="17"><span class="structure-symbol">⊕∂</span> Выбор</div>
+                    </div>
+                </div>
+
+                <div class="structure-section">
+                    <h3><span class="structure-dot" style="background: linear-gradient(135deg, #f59e0b, #dc2626);"></span>Модальности (9)</h3>
+                    <div class="structure-items">
+                        <div class="structure-item" data-node="18"><span class="structure-symbol">□</span> Необходимость</div>
+                        <div class="structure-item" data-node="19"><span class="structure-symbol">◇</span> Возможность</div>
+                        <div class="structure-item" data-node="20"><span class="structure-symbol">○</span> Временность</div>
+                        <div class="structure-item" data-node="21"><span class="structure-symbol">∞</span> Бесконечность</div>
+                        <div class="structure-item" data-node="22"><span class="structure-symbol">!</span> Прорыв</div>
+                        <div class="structure-item" data-node="23"><span class="structure-symbol">≈</span> Подобие</div>
+                        <div class="structure-item" data-node="24"><span class="structure-symbol">⊥</span> Ортогональность</div>
+                        <div class="structure-item" data-node="25"><span class="structure-symbol">∅</span> Пустота</div>
+                        <div class="structure-item" data-node="26"><span class="structure-symbol">Ω</span> Целостность</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced functor data with additional fields
+        const functors = [
+            { 
+                id: 1, 
+                name: "Квантовый", 
+                formula: "◇(τ ⊕ ι) ∘ μ", 
+                nodes: [0, 2, 11, 4, 7, 19], 
+                essence: "Удержание противоположных убеждений одновременно", 
+                application: "Работа с полярными убеждениями, амбивалентность", 
+                example: "Я могу быть строгим родителем И любящим одновременно",
+                triggers: "Внутренний конфликт, парадоксальные требования, двойные послания",
+                patterns: "'И...и', 'С одной стороны...с другой', 'Одновременно', 'Как будто два разных человека'",
+                metaEffect: "Размывание программы 'или-или', активация мета-позиции наблюдателя"
+            },
+            { 
+                id: 2, 
+                name: "Рекурсивный", 
+                formula: "μ(λ ∘ φ ∘ τ)", 
+                nodes: [7, 5, 8, 0, 9], 
+                essence: "Применение убеждения к самому себе", 
+                application: "Выявление парадоксов и противоречий", 
+                example: "Убеждение 'я ни в чем не уверен' — вы уверены в этой неуверенности?",
+                triggers: "Самореферентные высказывания, абсолютизации, догматичность",
+                patterns: "'Всегда', 'Никогда', 'Я такой человек, который...', 'Это правда, что...'",
+                metaEffect: "Разрушение жестких убеждений через самоприменение"
+            },
+            { 
+                id: 3, 
+                name: "Топологический", 
+                formula: "φ(topology) ∘ ι", 
+                nodes: [8, 4, 9], 
+                essence: "Выворачивание наизнанку", 
+                application: "Экстернализация внутренних процессов", 
+                example: "То, что вы считаете внутренней тревогой, уже снаружи",
+                triggers: "Застревание во внутренних переживаниях, руминация",
+                patterns: "'Внутри меня', 'Я чувствую внутри', 'Мои мысли крутятся'",
+                metaEffect: "Инверсия границ внутреннее/внешнее"
+            },
+            { 
+                id: 4, 
+                name: "Эмерджентный", 
+                formula: "∫(parts) → whole", 
+                nodes: [13, 22], 
+                essence: "Создание нового качества из суммы", 
+                application: "Интеграция ресурсов", 
+                example: "Все ваши неудачи создают мастерство различения",
+                triggers: "Фрагментация опыта, обесценивание частей",
+                patterns: "'Это всего лишь...', 'Отдельные случаи', 'Не считается'",
+                metaEffect: "Активация холистического восприятия"
+            },
+            { 
+                id: 5, 
+                name: "Версионный", 
+                formula: "self.fork()", 
+                nodes: [1, 3, 15], 
+                essence: "Активация разных версий себя", 
+                application: "Ресурсные состояния", 
+                example: "Версия вас 2.0 уже умеет то, чему учится версия 1.0",
+                triggers: "Застревание в одной роли, ригидность Я-концепции",
+                patterns: "'Я всегда такой', 'Это не я', 'Я не умею'",
+                metaEffect: "Множественность Я, гибкость самовосприятия"
+            },
+            { 
+                id: 6, 
+                name: "Тензорный", 
+                formula: "⊗(dims)", 
+                nodes: [10, 11, 13], 
+                essence: "Раскрытие всех измерений проблемы", 
+                application: "Многомерный анализ", 
+                example: "Ваша неудача — это опыт × обучение × рост × мудрость",
+                triggers: "Одномерное мышление, туннельное видение",
+                patterns: "'Только', 'Просто', 'Всего лишь', 'Единственное'",
+                metaEffect: "Активация многомерного восприятия"
+            },
+            { 
+                id: 7, 
+                name: "Странно-петлевой", 
+                formula: "→self→", 
+                nodes: [7, 12, 23], 
+                essence: "Использование парадокса как двери", 
+                application: "Разрыв замкнутых циклов", 
+                example: "Чтобы перестать стараться, нужно постараться не стараться",
+                triggers: "Замкнутые петли поведения, компульсии",
+                patterns: "'Чем больше...тем больше', 'Не могу остановиться', 'Порочный круг'",
+                metaEffect: "Использование парадокса для выхода из цикла"
+            },
+            { 
+                id: 8, 
+                name: "Фазовый", 
+                formula: "state→critical", 
+                nodes: [0, 14, 22], 
+                essence: "Доведение до точки перехода", 
+                application: "Катализация изменений", 
+                example: "Еще чуть-чуть тревоги — и она превратится в возбуждение",
+                triggers: "Сопротивление изменениям, застой",
+                patterns: "'Почти', 'Вот-вот', 'На грани', 'Еще немного'",
+                metaEffect: "Использование критических точек для трансформации"
+            },
+            { 
+                id: 9, 
+                name: "Аттракторный", 
+                formula: "∇F→attr", 
+                nodes: [1, 10, 21], 
+                essence: "Изменение точек притяжения", 
+                application: "Переориентация мотивации", 
+                example: "Вместо избегания боли вас начинает притягивать рост",
+                triggers: "Негативная мотивация, избегающее поведение",
+                patterns: "'Убежать от', 'Избежать', 'Не хочу', 'Боюсь что'",
+                metaEffect: "Смена от-мотивации на к-мотивации"
+            },
+            { 
+                id: 10, 
+                name: "Волновой", 
+                formula: "ψ₁+ψ₂", 
+                nodes: [11, 13, 20], 
+                essence: "Нахождение резонанса", 
+                application: "Интеграция конфликтов", 
+                example: "Стабильность и приключения усиливают друг друга",
+                triggers: "Внутренние противоречия, конфликт частей",
+                patterns: "'Либо...либо', 'Не могу выбрать', 'Разрывает между'",
+                metaEffect: "Синтез противоположностей через резонанс"
+            },
+            { 
+                id: 11, 
+                name: "Синхронизационный", 
+                formula: "sync(ω)", 
+                nodes: [15, 16, 21], 
+                essence: "Приведение в согласованность", 
+                application: "Выравнивание процессов", 
+                example: "Мысли, чувства и действия в одном ритме",
+                triggers: "Рассогласованность, внутренний диссонанс",
+                patterns: "'Голова говорит одно, сердце другое', 'Разрываюсь', 'Не в ладу с собой'",
+                metaEffect: "Гармонизация всех уровней"
+            },
+            { 
+                id: 12, 
+                name: "Диссипативный", 
+                formula: "entropy→order", 
+                nodes: [14, 25, 22], 
+                essence: "Рассеивание напряжения", 
+                application: "Трансформация энергии", 
+                example: "Накопленная злость становится топливом творчества",
+                triggers: "Эмоциональные блоки, подавленные чувства",
+                patterns: "'Накипело', 'Держу в себе', 'Копится внутри'",
+                metaEffect: "Преобразование застойной энергии"
+            },
+            { 
+                id: 13, 
+                name: "Бифуркационный", 
+                formula: "path→fork", 
+                nodes: [2, 11, 17], 
+                essence: "Создание развилки", 
+                application: "Генерация альтернатив", 
+                example: "В точке 'невозможно' открываются три новых пути",
+                triggers: "Туннельное видение, отсутствие выбора",
+                patterns: "'Нет выхода', 'Единственный путь', 'Других вариантов нет'",
+                metaEffect: "Создание точек выбора"
+            },
+            { 
+                id: 14, 
+                name: "Турбулентный", 
+                formula: "chaos→create", 
+                nodes: [14, 23, 24], 
+                essence: "Использование хаоса", 
+                application: "Креативная дезорганизация", 
+                example: "Когда всё рушится — время для инноваций",
+                triggers: "Кризис, распад структур",
+                patterns: "'Всё летит к чертям', 'Полный хаос', 'Всё развалилось'",
+                metaEffect: "Хаос как ресурс для нового порядка"
+            },
+            { 
+                id: 15, 
+                name: "Консолидационный", 
+                formula: "memory.rewrite", 
+                nodes: [5, 6, 25], 
+                essence: "Переписывание воспоминаний", 
+                application: "Реимпринтинг", 
+                example: "В той ситуации вы учились границам",
+                triggers: "Травматические воспоминания, негативные импринты",
+                patterns: "'Это меня сломало', 'С тех пор я...', 'После этого всё изменилось'",
+                metaEffect: "Реконсолидация памяти с новым смыслом"
+            },
+            { 
+                id: 16, 
+                name: "Нейромодуляторный", 
+                formula: "chem.shift", 
+                nodes: [3, 12, 19], 
+                essence: "Изменение биохимии эмоций", 
+                application: "Работа с состояниями", 
+                example: "Тревога минус кортизол плюс дофамин = предвкушение",
+                triggers: "Застревание в эмоциональных состояниях",
+                patterns: "'Не могу успокоиться', 'Постоянно в стрессе', 'Всегда напряжен'",
+                metaEffect: "Сдвиг нейрохимического баланса"
+            },
+            { 
+                id: 17, 
+                name: "Импринтинговый", 
+                formula: "imprint.new", 
+                nodes: [7, 16, 26], 
+                essence: "Создание новых отпечатков", 
+                application: "Формирование убеждений", 
+                example: "Рождается новый отпечаток: 'Я способен на всё'",
+                triggers: "Пиковые переживания, инсайты",
+                patterns: "'Вдруг понял', 'Озарение', 'Как будто пелена спала'",
+                metaEffect: "Создание новых базовых программ"
+            },
+            { 
+                id: 18, 
+                name: "Квантово-стирающий", 
+                formula: "path.erase", 
+                nodes: [0, 17, 25], 
+                essence: "Стирание информации о выборе", 
+                application: "Возвращение возможностей", 
+                example: "Все пути, которые вы 'не выбрали', всё еще доступны",
+                triggers: "Сожаления о прошлом, фиксация на выборе",
+                patterns: "'Если бы я тогда...', 'Упущенные возможности', 'Поезд ушел'",
+                metaEffect: "Возвращение квантовой суперпозиции выборов"
+            },
+            { 
+                id: 19, 
+                name: "Запутанный", 
+                formula: "|ψ⟩", 
+                nodes: [1, 7, 18, 26], 
+                essence: "Квантовая связанность", 
+                application: "Системные расстановки", 
+                example: "Вы квантово связаны со всеми, кто прошел этот путь",
+                triggers: "Чувство изоляции, отделенности",
+                patterns: "'Я один', 'Никто не понимает', 'Это только со мной'",
+                metaEffect: "Активация квантовой запутанности с системой"
+            },
+            { 
+                id: 20, 
+                name: "Сингулярный", 
+                formula: "∞=1/0", 
+                nodes: [13, 22, 26], 
+                essence: "Точка бесконечной плотности", 
+                application: "Радикальная трансформация", 
+                example: "Все убеждения схлопываются — рождается новое Я",
+                triggers: "Экзистенциальный кризис, потеря смысла",
+                patterns: "'Всё бессмысленно', 'Я не знаю кто я', 'Полная пустота'",
+                metaEffect: "Прохождение через точку сингулярности"
+            },
+            { 
+                id: 21, 
+                name: "Просветляющий", 
+                formula: "illusion→clarity", 
+                nodes: [26], 
+                essence: "Растворение иллюзий", 
+                application: "Прорыв к ясности", 
+                example: "Поиск ответа и был преградой, скрывающей ответ",
+                triggers: "Ментальные ловушки, иллюзии",
+                patterns: "'Я запутался', 'Не вижу выхода', 'Всё не то, чем кажется'",
+                metaEffect: "Прямое видение за пределами иллюзий"
+            },
+            { 
+                id: 22, 
+                name: "Спектральный", 
+                formula: "white→spectrum", 
+                nodes: [2, 14, 20], 
+                essence: "Разложение на спектр", 
+                application: "Дифференциация", 
+                example: "Ваш 'провал' — это спектр из 7 оттенков опыта",
+                triggers: "Черно-белое мышление, обобщения",
+                patterns: "'Всё плохо', 'Полный провал', 'Абсолютная неудача'",
+                metaEffect: "Дифференциация недифференцированного"
+            },
+            { 
+                id: 23, 
+                name: "Итеративный", 
+                formula: "f^n(x)", 
+                nodes: [12, 15, 21], 
+                essence: "Микроизменения", 
+                application: "Постепенная трансформация", 
+                example: "1% улучшения 100 раз = в 2.7 раза лучше",
+                triggers: "Нетерпение, желание быстрых изменений",
+                patterns: "'Хочу всё и сразу', 'Это слишком медленно', 'Нет прогресса'",
+                metaEffect: "Кумулятивный эффект микроизменений"
+            },
+            { 
+                id: 24, 
+                name: "Голографический", 
+                formula: "part≡whole", 
+                nodes: [5, 8, 24], 
+                essence: "Целое в каждой части", 
+                application: "Работа с фракталами", 
+                example: "В маленьком страхе отражается вся система безопасности",
+                triggers: "Фрагментация, потеря целостности",
+                patterns: "'Это отдельная проблема', 'Не связано', 'Изолированный случай'",
+                metaEffect: "Видение целого в части"
+            },
+            { 
+                id: 25, 
+                name: "Темпоральный", 
+                formula: "time↔time", 
+                nodes: [0, 20, 21], 
+                essence: "Искривление времени", 
+                application: "Работа с временными линиями", 
+                example: "Будущее Я уже послало вам ресурсы в прошлое",
+                triggers: "Линейное восприятие времени, застревание в прошлом/будущем",
+                patterns: "'Слишком поздно', 'Если бы раньше', 'Когда-нибудь потом'",
+                metaEffect: "Нелинейность времени, доступ к ресурсам всех времен"
+            },
+            { 
+                id: 26, 
+                name: "Метаморфный", 
+                formula: "form→metamorph", 
+                nodes: [4, 8, 23, 26], 
+                essence: "Полная трансформация", 
+                application: "Смена идентичности", 
+                example: "Гусеница растворяется и собирается в бабочку",
+                triggers: "Кризис идентичности, необходимость полной трансформации",
+                patterns: "'Я больше не могу быть прежним', 'Нужно измениться полностью'",
+                metaEffect: "Полная реконфигурация идентичности"
+            },
+            { 
+                id: 27, 
+                name: "Трансцендентный", 
+                formula: "∞+1", 
+                nodes: [26], 
+                essence: "Выход за все пределы", 
+                application: "Окончательная интеграция", 
+                example: "Вы уже там, куда стремитесь — играете в путь",
+                triggers: "Достижение предела, завершение пути",
+                patterns: "'Дальше некуда', 'Это предел', 'Достиг всего'",
+                metaEffect: "Трансценденция всех уровней и ограничений"
+            }
+        ];
+
+        // Node data
+        const nodes = [
+            // Layer 1 - Generators
+            { x: -1, y: -1, z: -1, type: 'generator', symbol: 'τ', name: 'Переход' },
+            { x: 0, y: -1, z: -1, type: 'generator', symbol: 'σ', name: 'Связывание' },
+            { x: 1, y: -1, z: -1, type: 'generator', symbol: 'δ', name: 'Разделение' },
+            { x: -1, y: 0, z: -1, type: 'generator', symbol: 'ρ', name: 'Репликация' },
+            { x: 0, y: 0, z: -1, type: 'generator', symbol: 'ι', name: 'Инверсия' },
+            { x: 1, y: 0, z: -1, type: 'generator', symbol: 'λ', name: 'Абстракция' },
+            { x: -1, y: 1, z: -1, type: 'generator', symbol: 'κ', name: 'Конкретизация' },
+            { x: 0, y: 1, z: -1, type: 'generator', symbol: 'μ', name: 'Рекурсия' },
+            { x: 1, y: 1, z: -1, type: 'generator', symbol: 'φ', name: 'Рефрейминг' },
+            // Layer 2 - Operators
+            { x: -1, y: -1, z: 0, type: 'operator', symbol: '∘', name: 'Последовательность' },
+            { x: 0, y: -1, z: 0, type: 'operator', symbol: '⊗', name: 'Параллель' },
+            { x: 1, y: -1, z: 0, type: 'operator', symbol: '⊕', name: 'Альтернатива' },
+            { x: -1, y: 0, z: 0, type: 'operator', symbol: '★', name: 'Итерация' },
+            { x: 0, y: 0, z: 0, type: 'operator', symbol: '∫', name: 'Континуум' },
+            { x: 1, y: 0, z: 0, type: 'operator', symbol: '∂', name: 'Точечность' },
+            { x: -1, y: 1, z: 0, type: 'operator', symbol: '∘★', name: 'Цикл' },
+            { x: 0, y: 1, z: 0, type: 'operator', symbol: '⊗∫', name: 'Поток' },
+            { x: 1, y: 1, z: 0, type: 'operator', symbol: '⊕∂', name: 'Выбор' },
+            // Layer 3 - Modalities
+            { x: -1, y: -1, z: 1, type: 'modality', symbol: '□', name: 'Необходимость' },
+            { x: 0, y: -1, z: 1, type: 'modality', symbol: '◇', name: 'Возможность' },
+            { x: 1, y: -1, z: 1, type: 'modality', symbol: '○', name: 'Временность' },
+            { x: -1, y: 0, z: 1, type: 'modality', symbol: '∞', name: 'Бесконечность' },
+            { x: 0, y: 0, z: 1, type: 'modality', symbol: '!', name: 'Прорыв' },
+            { x: 1, y: 0, z: 1, type: 'modality', symbol: '≈', name: 'Подобие' },
+            { x: -1, y: 1, z: 1, type: 'modality', symbol: '⊥', name: 'Ортогональность' },
+            { x: 0, y: 1, z: 1, type: 'modality', symbol: '∅', name: 'Пустота' },
+            { x: 1, y: 1, z: 1, type: 'modality', symbol: 'Ω', name: 'Целостность' }
+        ];
+
+        let currentFunctor = null;
+        let cube = null;
+        let autoRotating = false;
+        let rotationInterval = null;
+        let isDragging = false;
+        let currentX = 0;
+        let currentY = 0;
+        let startX = 0;
+        let startY = 0;
+        let rotX = -20;
+        let rotY = 30;
+        let exploded = false;
+        let focusedMode = false;
+        let labelsVisible = false;
+        let nodeElements = [];
+
+        // Initialize
+        function init() {
+            createStars();
+            createMatrixRain();
+            createFunctorsList();
+            createCube();
+            setupInteractions();
+        }
+
+        // Create starfield
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Create matrix rain effect
+        function createMatrixRain() {
+            const matrix = document.getElementById('matrixRain');
+            const chars = '01⊗∘⊕∫∂τσδριλκμφ□◇○∞!≈⊥∅Ω';
+            
+            for (let i = 0; i < 30; i++) {
+                const column = document.createElement('div');
+                column.className = 'matrix-column';
+                column.style.left = Math.random() * 100 + '%';
+                column.style.animationDuration = 10 + Math.random() * 20 + 's';
+                column.style.animationDelay = Math.random() * 20 + 's';
+                
+                let text = '';
+                for (let j = 0; j < 50; j++) {
+                    text += chars[Math.floor(Math.random() * chars.length)] + '<br>';
+                }
+                column.innerHTML = text;
+                matrix.appendChild(column);
+            }
+        }
+
+        // Create functors list
+        function createFunctorsList() {
+            const list = document.getElementById('functorsList');
+            functors.forEach(f => {
+                const card = document.createElement('div');
+                card.className = 'functor-card';
+                card.innerHTML = `
+                    <div>
+                        <span class="functor-number">${f.id}</span>
+                        <span class="functor-name">${f.name}</span>
+                    </div>
+                    <div class="functor-formula">${f.formula}</div>
+                `;
+                card.onclick = () => selectFunctor(f);
+                list.appendChild(card);
+            });
+        }
+
+        // Create 3D cube
+        function createCube() {
+            cube = document.getElementById('cube');
+            const spacing = 150;
+            
+            nodes.forEach((node, index) => {
+                const nodeEl = document.createElement('div');
+                nodeEl.className = `node ${node.type}`;
+                nodeEl.style.transform = `translate3d(${node.x * spacing}px, ${node.y * spacing}px, ${node.z * spacing}px)`;
+                nodeEl.dataset.index = index;
+                
+                nodeEl.innerHTML = `
+                    <span>${node.symbol}</span>
+                    <div class="node-label">${node.name}</div>
+                `;
+                
+                // Add hover effect for better interactivity
+                nodeEl.addEventListener('mouseenter', () => {
+                    if (!nodeEl.classList.contains('highlighted')) {
+                        nodeEl.style.transform = `translate3d(${node.x * spacing}px, ${node.y * spacing}px, ${node.z * spacing}px) scale(1.1)`;
+                    }
+                });
+                
+                nodeEl.addEventListener('mouseleave', () => {
+                    if (!nodeEl.classList.contains('highlighted')) {
+                        nodeEl.style.transform = `translate3d(${node.x * spacing}px, ${node.y * spacing}px, ${node.z * spacing}px)`;
+                    }
+                });
+                
+                cube.appendChild(nodeEl);
+                nodeElements.push(nodeEl);
+            });
+        }
+
+        // Select functor
+        function selectFunctor(functor) {
+            currentFunctor = functor;
+            
+            // Update active state
+            document.querySelectorAll('.functor-card').forEach((card, index) => {
+                card.classList.toggle('active', index === functor.id - 1);
+            });
+            
+            // Clear previous highlights
+            nodeElements.forEach(node => node.classList.remove('highlighted'));
+            document.querySelectorAll('.structure-item').forEach(item => item.classList.remove('highlighted'));
+            
+            // Highlight nodes in cube and structure panel
+            functor.nodes.forEach(nodeIndex => {
+                if (nodeElements[nodeIndex]) {
+                    nodeElements[nodeIndex].classList.add('highlighted');
+                }
+                // Highlight in structure panel
+                const structureItem = document.querySelector(`.structure-item[data-node="${nodeIndex}"]`);
+                if (structureItem) {
+                    structureItem.classList.add('highlighted');
+                }
+            });
+            
+            // Show details
+            showDetails(functor);
+            
+            // Focus view if in focus mode
+            if (focusedMode) {
+                focusOnFunctor(functor);
+            }
+        }
+
+        // Show functor details with extended fields
+        function showDetails(functor) {
+            const panel = document.getElementById('detailsPanel');
+            panel.innerHTML = `
+                <div class="detail-card">
+                    <div class="detail-title">
+                        ${functor.id}. ${functor.name} функтор
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Формула</div>
+                        <div class="formula-display">${functor.formula}</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Суть</div>
+                        <div class="detail-content">${functor.essence}</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Применение</div>
+                        <div class="detail-content">${functor.application}</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Пример</div>
+                        <div class="example-box">"${functor.example}"</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Триггеры</div>
+                        <div class="detail-content">${functor.triggers}</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Лингвистические шаблоны</div>
+                        <div class="detail-content">${functor.patterns}</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Эффект на метапрограммы</div>
+                        <div class="detail-content">${functor.metaEffect}</div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <div class="detail-label">Компоненты</div>
+                        <div class="detail-content">
+                            ${functor.nodes.map(n => `${nodes[n].symbol} (${nodes[n].name})`).join(' • ')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Setup interactions - Fixed rotation around Continuum
+        function setupInteractions() {
+            const wrapper = document.getElementById('cubeWrapper');
+            
+            wrapper.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                wrapper.style.cursor = 'grabbing';
+                startX = e.clientX - currentX;
+                startY = e.clientY - currentY;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                currentX = e.clientX - startX;
+                currentY = e.clientY - startY;
+                rotY = currentX * 0.5;
+                rotX = -currentY * 0.5;
+                updateTransform();
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                wrapper.style.cursor = 'grab';
+            });
+
+            // Touch support
+            wrapper.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                startX = e.touches[0].clientX - currentX;
+                startY = e.touches[0].clientY - currentY;
+            });
+
+            document.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault();
+                currentX = e.touches[0].clientX - startX;
+                currentY = e.touches[0].clientY - startY;
+                rotY = currentX * 0.5;
+                rotX = -currentY * 0.5;
+                updateTransform();
+            });
+
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+        }
+
+        // Update cube transform - Rotation around Continuum (center)
+        function updateTransform() {
+            const scale = exploded ? 1.5 : 1;
+            cube.style.transform = `translate(-50%, -50%) scale(${scale}) rotateX(${rotX}deg) rotateY(${rotY}deg) rotateZ(0deg)`;
+        }
+
+        // Control functions
+        function resetView() {
+            rotX = -20;
+            rotY = 30;
+            currentX = 0;
+            currentY = 0;
+            exploded = false;
+            focusedMode = false;
+            updateTransform();
+            
+            // Clear highlights
+            nodeElements.forEach(node => node.classList.remove('highlighted'));
+            document.querySelectorAll('.structure-item').forEach(item => item.classList.remove('highlighted'));
+        }
+
+        function toggleRotation() {
+            autoRotating = !autoRotating;
+            const btn = document.getElementById('rotateBtn');
+            
+            if (autoRotating) {
+                btn.classList.add('active');
+                rotationInterval = setInterval(() => {
+                    rotY += 1;
+                    updateTransform();
+                }, 30);
+            } else {
+                btn.classList.remove('active');
+                clearInterval(rotationInterval);
+            }
+        }
+
+        function toggleLabels() {
+            labelsVisible = !labelsVisible;
+            const btn = document.getElementById('labelsBtn');
+            const wrapper = document.getElementById('cubeWrapper');
+            
+            if (labelsVisible) {
+                btn.classList.add('active');
+                wrapper.classList.add('labels-visible');
+            } else {
+                btn.classList.remove('active');
+                wrapper.classList.remove('labels-visible');
+            }
+        }
+
+        function explodeView() {
+            exploded = !exploded;
+            
+            if (exploded) {
+                nodeElements.forEach((node, i) => {
+                    const n = nodes[i];
+                    const scale = 1.8;
+                    node.style.transform = `translate3d(${n.x * 150 * scale}px, ${n.y * 150 * scale}px, ${n.z * 150 * scale}px)`;
+                });
+            } else {
+                nodeElements.forEach((node, i) => {
+                    const n = nodes[i];
+                    node.style.transform = `translate3d(${n.x * 150}px, ${n.y * 150}px, ${n.z * 150}px)`;
+                });
+            }
+            
+            updateTransform();
+        }
+
+        function focusMode() {
+            focusedMode = !focusedMode;
+            
+            if (focusedMode && currentFunctor) {
+                focusOnFunctor(currentFunctor);
+            } else {
+                nodeElements.forEach(node => {
+                    node.style.opacity = '1';
+                    node.style.filter = 'none';
+                });
+            }
+        }
+
+        function focusOnFunctor(functor) {
+            nodeElements.forEach((node, index) => {
+                if (functor.nodes.includes(index)) {
+                    node.style.opacity = '1';
+                    node.style.filter = 'none';
+                } else {
+                    node.style.opacity = '0.2';
+                    node.style.filter = 'blur(2px)';
+                }
+            });
+        }
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>
